@@ -340,14 +340,39 @@ verified to fail when the rules are wrong.
 
 ## Screenshots
 
-> Placeholders — capture from a running stack. See [`docs/screenshots/`](docs/screenshots/).
+All captured from the running stack described in [Results](#results).
 
-| | |
-|---|---|
-| ![Grafana dashboard](docs/screenshots/dashboard.png) | ![Flink job graph](docs/screenshots/flink-job.png) |
-| *Grafana: alerts over time, by rule, top cards, live feed* | *Flink UI: the job running* |
-| ![Kafka UI](docs/screenshots/kafka-ui.png) | ![Evaluation](docs/screenshots/evaluate.png) |
-| *Kafka UI: the `transactions` topic* | *`make evaluate` output* |
+### Grafana — the fraud dashboard
+
+![Grafana dashboard](docs/screenshots/dashboard.png)
+
+Alerts per minute stacked by rule, the rule mix, top flagged cards, and a live
+feed. The feed's "What happened" column comes straight from `v_recent_alerts` —
+`CA -> SG in 90.0s` is an injected impossible-travel anomaly caught end to end.
+
+### Flink — the job running
+
+![Flink job graph](docs/screenshots/flink-job.png)
+
+Flink 1.20.5. The source chains into the keyed `fraud rules` operator via a HASH
+partition on `card_id`, and that operator fans out to both sinks — the Kafka
+writer/committer and `Sink: pg_fraud_alerts`. Note the **Low Watermark** value:
+event time is advancing, which is what makes the windows meaningful.
+Backpressure 0%.
+
+### Kafka — the transaction stream
+
+![Kafka UI](docs/screenshots/kafka-ui.png)
+
+The `transactions` topic, keyed by `card_id` and spread across all three
+partitions.
+
+### Evaluation output
+
+![Evaluation](docs/screenshots/evaluate.png)
+
+The output of `make evaluate`, rendered as a terminal for legibility. The text is
+reproduced verbatim from [`docs/evaluation-run.txt`](docs/evaluation-run.txt).
 
 ---
 

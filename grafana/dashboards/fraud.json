@@ -144,7 +144,7 @@
       "type": "timeseries",
       "title": "Alerts per minute by rule",
       "description": "Bucketed on event time (detected_at), not ingestion time, so a replay reproduces the same shape.",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "gridPos": { "h": 13, "w": 12, "x": 0, "y": 4 },
       "datasource": { "type": "postgres", "uid": "pfs-postgres" },
       "fieldConfig": {
         "defaults": {
