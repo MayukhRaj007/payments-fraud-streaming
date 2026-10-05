@@ -7,7 +7,7 @@ Postgres and a Grafana dashboard.
 Everything is free, open source, and runs locally with one command. No cloud
 accounts, and nothing to install but Docker — not even Python.
 
-[![CI](https://github.com/mayukhraj1994/payments-fraud-streaming/actions/workflows/ci.yml/badge.svg)](https://github.com/mayukhraj1994/payments-fraud-streaming/actions/workflows/ci.yml)
+[![CI](https://github.com/MayukhRaj007/payments-fraud-streaming/actions/workflows/ci.yml/badge.svg)](https://github.com/MayukhRaj007/payments-fraud-streaming/actions/workflows/ci.yml)
 
 ---
 
@@ -88,7 +88,7 @@ flowchart LR
 Three commands:
 
 ```bash
-git clone https://github.com/mayukhraj1994/payments-fraud-streaming.git
+git clone https://github.com/MayukhRaj007/payments-fraud-streaming.git
 cd payments-fraud-streaming
 docker compose up -d
 ```
