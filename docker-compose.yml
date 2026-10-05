@@ -109,5 +109,27 @@ services:
       - ./data:/data
     restart: unless-stopped
 
+  # ------------------------------------------------------------- Postgres ----
+  postgres:
+    image: postgres:17-alpine
+    container_name: pfs-postgres
+    ports:
+      - "5432:5432"          # psql from the host if you want to poke around
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fraud}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Runs ONCE, only when the data directory is empty. After editing
+      # init.sql you need `docker compose down -v` for it to re-run.
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraud} -d ${POSTGRES_DB:-fraud}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   kafka-data:
+  postgres-data:
