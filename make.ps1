@@ -26,6 +26,16 @@ switch ($Target) {
         Write-Host "Flink UI   http://localhost:8081"
         Write-Host "Grafana    http://localhost:3000  (admin/admin)"
     }
+    "stop"     { docker compose stop }
+    "start"    {
+        docker compose start
+        Write-Host ""
+        Write-Host "Kafka UI   http://localhost:8082"
+        Write-Host "Flink UI   http://localhost:8081"
+        Write-Host "Grafana    http://localhost:3000  (admin/admin)"
+    }
+    # Removes containers and the network. Data survives in named volumes, so
+    # `up` restores the alert history. Use `stop` to merely pause.
     "down"     { docker compose down }
     "logs"     { docker compose logs -f --tail=100 }
     "ps"       { docker compose ps -a }
@@ -41,6 +51,10 @@ switch ($Target) {
     }
     "clean"    { docker compose down -v }
     default {
-        Write-Host "Targets: up down logs ps produce test lint evaluate clean"
+        Write-Host "Targets: up stop start down logs ps produce test lint evaluate clean"
+        Write-Host ""
+        Write-Host "  stop  pauses containers      start  resumes them"
+        Write-Host "  down  removes containers, KEEPS data (up restores it)"
+        Write-Host "  clean removes containers AND deletes data"
     }
 }

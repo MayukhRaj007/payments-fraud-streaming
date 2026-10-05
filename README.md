@@ -116,13 +116,33 @@ Give it about a minute, then:
 
 | Target | What it does |
 |---|---|
-| `up` / `down` | Start / stop the stack |
+| `up` | Start the stack (also recreates it after `down`) |
+| `stop` / `start` | Pause and resume, keeping the containers |
+| `down` | Remove containers and network — **data survives** |
+| `clean` | Remove containers **and delete all data** |
 | `logs` | Follow all service logs |
 | `produce` | Restart the producer (replays from the fixed seed) |
 | `test` | Unit tests, **in a container** — no local Python needed |
 | `lint` | `ruff check` |
 | `evaluate` | Precision / recall against injected labels |
-| `clean` | Stop and delete all volumes |
+
+### Stopping it without losing your alerts
+
+Containers are disposable; the data is not. It lives in named volumes
+(`postgres-data`, `kafka-data`, `grafana-data`) that outlive the containers.
+
+| Command | Containers | Your data |
+|---|---|---|
+| `make stop` | stopped, kept | kept |
+| `make down` | **removed** | kept |
+| `make clean` | removed | **deleted** |
+
+So `down` looking destructive is expected — the containers really are gone — but
+`up` rebuilds them from images you already have (about 10 seconds) and Postgres
+reattaches to the same volume with every alert still in it. Only `clean` loses
+data, and it is the one you need after editing
+[`sql/init.sql`](sql/init.sql), since the Postgres init hook only runs on an
+empty data directory.
 
 ```bash
 ./make.ps1 evaluate     # Windows

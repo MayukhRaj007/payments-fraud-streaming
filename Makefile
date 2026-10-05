@@ -1,6 +1,6 @@
 # Thin wrapper over docker compose. Windows users without `make` can use the
 # equivalent ./make.ps1 <target>, which dispatches to the same commands.
-.PHONY: up down logs produce test lint evaluate ps clean
+.PHONY: up stop start down logs produce test lint evaluate ps clean
 
 DEV_IMAGE := pfs-dev
 
@@ -12,7 +12,21 @@ up:
 	@echo "Flink UI   http://localhost:8081"
 	@echo "Grafana    http://localhost:3000  (admin/admin)"
 
-## down: stop the stack, keeping volumes
+## stop: pause the stack, keeping the containers so `start` resumes them
+stop:
+	docker compose stop
+
+## start: resume containers previously paused with `stop`
+start:
+	docker compose start
+	@echo ""
+	@echo "Kafka UI   http://localhost:8082"
+	@echo "Flink UI   http://localhost:8081"
+	@echo "Grafana    http://localhost:3000  (admin/admin)"
+
+## down: remove the containers and network. Data survives -- it lives in named
+## volumes, so `up` brings everything back with the alert history intact. Use
+## `stop` instead if you only want to pause.
 down:
 	docker compose down
 
@@ -46,6 +60,9 @@ evaluate:
 		-v "$(CURDIR)":/w -w /w $(DEV_IMAGE) \
 		python scripts/evaluate.py
 
-## clean: stop everything and delete volumes (full reset)
+## clean: full reset -- removes containers AND deletes the volumes, so the
+## alert history, Kafka log and Grafana state are all destroyed. This is the
+## only target that loses data. Also required after editing sql/init.sql, since
+## the Postgres init hook only runs on an empty data directory.
 clean:
 	docker compose down -v
