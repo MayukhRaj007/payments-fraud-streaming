@@ -35,7 +35,7 @@ import json
 import os
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -92,8 +92,7 @@ def fetch_alerts(conn, start: datetime, end: datetime) -> list[dict]:
             (start, end),
         )
         return [
-            {"txn_id": r[0], "card_id": r[1], "rule": r[2], "_ts": r[3]}
-            for r in cur.fetchall()
+            {"txn_id": r[0], "card_id": r[1], "rule": r[2], "_ts": r[3]} for r in cur.fetchall()
         ]
 
 
@@ -244,7 +243,9 @@ def main() -> int:
     print(f"alerts in window   {len(alerts)}")
     print(f"match tolerance    +/- {args.tolerance_sec:.0f}s on (card_id, rule)")
 
-    print_table("PRIMARY  -- (card_id, rule) within tolerance", match_tolerant(scored, alerts, tolerance))
+    print_table(
+        "PRIMARY  -- (card_id, rule) within tolerance", match_tolerant(scored, alerts, tolerance)
+    )
     print_table("STRICT   -- exact (txn_id, rule)", match_exact(scored, alerts))
 
     print(

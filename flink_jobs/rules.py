@@ -257,22 +257,16 @@ def evaluate(txn: dict, state: CardState, cfg: dict) -> tuple[list[dict], CardSt
     travel = check_impossible_travel(
         txn, state.last_country, state.last_country_ms, now_ms, cfg["travel_window_ms"]
     )
-    if travel and not is_suppressed(
-        state, RULE_IMPOSSIBLE_TRAVEL, now_ms, cfg["travel_window_ms"]
-    ):
+    if travel and not is_suppressed(state, RULE_IMPOSSIBLE_TRAVEL, now_ms, cfg["travel_window_ms"]):
         alerts.append(travel)
         state.last_alert_ms[RULE_IMPOSSIBLE_TRAVEL] = now_ms
 
     # --- Rule 1: count this transaction, then test the rolling window.
-    state.recent_ms = prune_recent(
-        [*state.recent_ms, now_ms], now_ms, cfg["velocity_window_ms"]
-    )
+    state.recent_ms = prune_recent([*state.recent_ms, now_ms], now_ms, cfg["velocity_window_ms"])
     velocity = check_velocity(
         txn, state.recent_ms, now_ms, cfg["velocity_window_ms"], cfg["velocity_max_txns"]
     )
-    if velocity and not is_suppressed(
-        state, RULE_VELOCITY, now_ms, cfg["velocity_window_ms"]
-    ):
+    if velocity and not is_suppressed(state, RULE_VELOCITY, now_ms, cfg["velocity_window_ms"]):
         alerts.append(velocity)
         state.last_alert_ms[RULE_VELOCITY] = now_ms
 

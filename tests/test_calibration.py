@@ -103,8 +103,7 @@ def test_simulated_background_traffic_is_quiet():
     # Suppression means observed should not exceed the analytic expectation by
     # much; 3x covers seed variance without tolerating a real regression.
     assert alerts_seen <= 3 * expected, (
-        f"{alerts_seen} chance velocity alerts in {n_txns} txns "
-        f"(expected ~{expected:.1f})"
+        f"{alerts_seen} chance velocity alerts in {n_txns} txns " f"(expected ~{expected:.1f})"
     )
 
 

@@ -258,9 +258,7 @@ def attach_postgres_sink(env, alert_rows, cfg: dict) -> None:
     t_env = StreamTableEnvironment.create(env)
     t_env.create_temporary_view("alerts", t_env.from_data_stream(alert_rows))
     t_env.execute_sql(
-        SINK_DDL.format(
-            url=cfg["pg_url"], user=cfg["pg_user"], password=cfg["pg_password"]
-        )
+        SINK_DDL.format(url=cfg["pg_url"], user=cfg["pg_user"], password=cfg["pg_password"])
     )
     statement_set = t_env.create_statement_set()
     statement_set.add_insert_sql(INSERT_INTO_PG)
@@ -282,9 +280,7 @@ def main() -> None:
         Duration.of_millis(cfg["watermark_lateness_sec"] * 1000)
     ).with_timestamp_assigner(TxnTimestampAssigner())
 
-    transactions = env.from_source(
-        build_source(cfg), watermark_strategy, "kafka: transactions"
-    )
+    transactions = env.from_source(build_source(cfg), watermark_strategy, "kafka: transactions")
 
     alerts = (
         transactions
@@ -297,9 +293,7 @@ def main() -> None:
 
     # Fan out to both sinks from the same stream.
     alerts.sink_to(build_alert_kafka_sink(cfg)).name("kafka: fraud-alerts")
-    attach_postgres_sink(
-        env, alerts.map(alert_to_row, output_type=ALERT_ROW_TYPE), cfg
-    )
+    attach_postgres_sink(env, alerts.map(alert_to_row, output_type=ALERT_ROW_TYPE), cfg)
 
     env.execute("payments-fraud-detector")
 

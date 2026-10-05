@@ -149,6 +149,7 @@ def test_inject_rejects_unknown_kind(rng, card):
 def test_same_seed_reproduces_the_same_anomaly():
     """The README promises reproducible runs, so the seed must fully determine
     generated ids and amounts."""
+
     def run():
         r = random.Random(99)
         c = build_cards(r, 10)[0]
@@ -185,6 +186,7 @@ def test_background_traffic_rarely_trips_the_amount_rule(rng, card):
 def test_amount_scales_with_merchant_category(rng):
     """Category multipliers must actually shift the distribution, otherwise the
     simulation is a single flat spend profile wearing different labels."""
+
     def median_for(category):
         r = random.Random(7)
         return sorted(sample_amount(r, category) for _ in range(2000))[1000]

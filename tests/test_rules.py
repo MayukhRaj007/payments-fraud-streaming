@@ -279,10 +279,7 @@ def test_travel_rule_rejects_out_of_order_events():
     """A negative gap means the data arrived out of order, not that a card
     teleported; it must not be reported as fraud."""
     assert (
-        check_impossible_travel(
-            txn(country="AU"), "CA", BASE_MS + 90_000, BASE_MS, 600_000
-        )
-        is None
+        check_impossible_travel(txn(country="AU"), "CA", BASE_MS + 90_000, BASE_MS, 600_000) is None
     )
 
 
@@ -358,9 +355,7 @@ def test_evaluate_detects_injected_impossible_travel(cfg):
     state = CardState()
     alerts, state = evaluate(txn(country="CA", channel="POS"), state, cfg)
     assert alerts == []
-    alerts, state = evaluate(
-        txn(offset_ms=90_000, country="AU", channel="POS"), state, cfg
-    )
+    alerts, state = evaluate(txn(offset_ms=90_000, country="AU", channel="POS"), state, cfg)
     assert [a["rule"] for a in alerts] == [RULE_IMPOSSIBLE_TRAVEL]
 
 

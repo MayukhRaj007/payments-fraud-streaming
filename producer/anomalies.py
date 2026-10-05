@@ -91,9 +91,7 @@ def large_amount(
     """
     amount = rng.uniform(threshold_cad * 1.05, threshold_cad * max_multiple)
     # High-value categories make a large amount plausible rather than absurd.
-    txn = make_transaction(
-        rng, card, amount=amount, category=rng.choice(["electronics", "travel"])
-    )
+    txn = make_transaction(rng, card, amount=amount, category=rng.choice(["electronics", "travel"]))
     return [
         ScheduledTxn(
             delay_sec=0.0,
@@ -103,9 +101,7 @@ def large_amount(
     ]
 
 
-def impossible_travel(
-    rng, card: Card, *, gap_sec: float = 90.0
-) -> list[ScheduledTxn]:
+def impossible_travel(rng, card: Card, *, gap_sec: float = 90.0) -> list[ScheduledTxn]:
     """Same card in two countries too close together to be physically possible.
 
     Leg 1 at home, leg 2 abroad `gap_sec` later (default 90s -- well inside the

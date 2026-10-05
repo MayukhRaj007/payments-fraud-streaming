@@ -1,0 +1,35 @@
+﻿==============================================================================
+FRAUD DETECTOR EVALUATION
+==============================================================================
+run_id             2026-10-05T09:02:45.694Z
+window             2026-10-05T09:03:00.899000+00:00  ->  2026-10-05T09:14:33.445000+00:00
+labels scored      58  (9 skipped inside grace period)
+alerts in window   59
+match tolerance    +/- 60s on (card_id, rule)
+
+PRIMARY  -- (card_id, rule) within tolerance
+------------------------------------------------------------------------------
+rule                     TP     FP     FN   precision    recall      F1
+------------------------------------------------------------------------------
+VELOCITY                 22      0      0     100.0%    100.0%    1.00
+AMOUNT                   16      0      0     100.0%    100.0%    1.00
+IMPOSSIBLE_TRAVEL        20      1      0      95.2%    100.0%    0.98
+------------------------------------------------------------------------------
+OVERALL                  58      1      0      98.3%    100.0%    0.99
+
+STRICT   -- exact (txn_id, rule)
+------------------------------------------------------------------------------
+rule                     TP     FP     FN   precision    recall      F1
+------------------------------------------------------------------------------
+VELOCITY                 10     12     12      45.5%     45.5%    0.45
+AMOUNT                   16      0      0     100.0%    100.0%    1.00
+IMPOSSIBLE_TRAVEL        20      1      0      95.2%    100.0%    0.98
+------------------------------------------------------------------------------
+OVERALL                  46     13     12      78.0%     79.3%    0.79
+
+Note: the two tables differ because a velocity burst is interleaved with
+the card's ordinary traffic, so the transaction that actually crosses the
+threshold is often a background one arriving mid-burst. The primary metric
+credits catching the anomaly; the strict one requires naming the exact
+transaction the simulator labelled.
+
