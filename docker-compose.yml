@@ -93,7 +93,8 @@ services:
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
       TOPIC_TRANSACTIONS: ${TOPIC_TRANSACTIONS:-transactions}
-      EVENTS_PER_SEC: ${EVENTS_PER_SEC:-20}
+      # Calibrated against the velocity threshold -- see README "Calibration".
+      EVENTS_PER_SEC: ${EVENTS_PER_SEC:-5}
       NUM_CARDS: ${NUM_CARDS:-500}
       SEED: ${SEED:-42}
       RUN_SECONDS: ${RUN_SECONDS:-0}
