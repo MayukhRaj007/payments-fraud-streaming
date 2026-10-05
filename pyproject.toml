@@ -13,6 +13,13 @@ exclude = [".venv", "data"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+# flink_jobs/ runs inside the Flink 1.20 image, which is Ubuntu 22.04 with
+# Python 3.10 -- not the 3.11 the rest of the project targets. UP017 would
+# rewrite `timezone.utc` to `datetime.UTC`, which only exists on 3.11+ and would
+# crash the job in the TaskManager.
+"flink_jobs/*" = ["UP017"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Rules and anomaly logic are importable as top-level packages during tests.

@@ -130,6 +130,79 @@ services:
       timeout: 5s
       retries: 10
 
+  # ----------------------------------------------------------------- Flink ----
+  # JobManager, TaskManager and a one-shot submitter all share one image, built
+  # from ./flink_jobs: Flink 1.20.5 + PyFlink + the Kafka/JDBC connector JARs.
+  flink-jobmanager:
+    build: ./flink_jobs
+    image: pfs-flink
+    container_name: pfs-flink-jobmanager
+    command: jobmanager
+    ports:
+      - "8081:8081"          # Flink Web UI
+    environment:
+      # Memory stays modest so the whole stack fits a default 8GB Docker
+      # Desktop allocation alongside Kafka, Postgres and Grafana.
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1200m
+        state.checkpoints.dir: file:///tmp/flink-checkpoints
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/overview || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  flink-taskmanager:
+    build: ./flink_jobs
+    image: pfs-flink
+    container_name: pfs-flink-taskmanager
+    command: taskmanager
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 2048m
+        taskmanager.numberOfTaskSlots: 2
+        state.checkpoints.dir: file:///tmp/flink-checkpoints
+
+  # One-shot: submits the job and exits, so `docker compose up` ends with a
+  # RUNNING job and no manual step.
+  flink-submit:
+    build: ./flink_jobs
+    image: pfs-flink
+    container_name: pfs-flink-submit
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+      flink-taskmanager:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      JOBMANAGER_HOST: flink-jobmanager
+      KAFKA_BOOTSTRAP: kafka:9092
+      TOPIC_TRANSACTIONS: ${TOPIC_TRANSACTIONS:-transactions}
+      TOPIC_ALERTS: ${TOPIC_ALERTS:-fraud-alerts}
+      FLINK_PARALLELISM: ${FLINK_PARALLELISM:-2}
+      WATERMARK_LATENESS_SEC: ${WATERMARK_LATENESS_SEC:-5}
+      VELOCITY_WINDOW_SEC: ${VELOCITY_WINDOW_SEC:-60}
+      VELOCITY_MAX_TXNS: ${VELOCITY_MAX_TXNS:-5}
+      AMOUNT_THRESHOLD_CAD: ${AMOUNT_THRESHOLD_CAD:-5000}
+      TRAVEL_WINDOW_SEC: ${TRAVEL_WINDOW_SEC:-600}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fraud}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud}
+    command: ["/opt/pfs/submit.sh"]
+    restart: "no"
+
 volumes:
   kafka-data:
   postgres-data:

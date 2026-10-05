@@ -38,9 +38,15 @@ CARD_PRESENT_CHANNELS = frozenset({"POS", "ATM"})
 def parse_event_time(value: str) -> int:
     """ISO-8601 UTC timestamp -> epoch milliseconds.
 
-    Accepts the trailing 'Z' the producer emits. Milliseconds (not seconds) are
-    used throughout because Flink's watermarks and timers are millisecond-based.
+    The trailing 'Z' is normalised by hand rather than left to fromisoformat:
+    only Python 3.11+ accepts 'Z' directly, and the Flink image ships 3.10. This
+    module therefore has to parse the producer's format on both.
+
+    Milliseconds (not seconds) throughout, because Flink watermarks and timers
+    are millisecond-based.
     """
+    if value.endswith("Z"):
+        value = value[:-1] + "+00:00"
     return int(datetime.fromisoformat(value).timestamp() * 1000)
 
 
