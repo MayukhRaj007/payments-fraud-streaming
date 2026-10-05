@@ -1,0 +1,21 @@
+# Default: let git normalise text in the repo.
+* text=auto
+
+# Anything executed inside a Linux container MUST keep LF endings. With CRLF,
+# the shell tries to run "bash\r" and fails with a confusing "not found".
+*.sh            text eol=lf
+Makefile        text eol=lf
+Dockerfile*     text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.py            text eol=lf
+*.sql           text eol=lf
+.env.example    text eol=lf
+
+# PowerShell is happiest with CRLF on Windows.
+*.ps1           text eol=crlf
+
+# Never munge binaries or screenshots.
+*.png           binary
+*.jpg           binary
+*.jar           binary
