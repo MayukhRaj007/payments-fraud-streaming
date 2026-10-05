@@ -1,0 +1,248 @@
+{
+  "uid": "pfs-fraud",
+  "title": "Payments Fraud Detection",
+  "description": "Live view of alerts emitted by the PyFlink detector. All panels read Postgres views defined in sql/init.sql.",
+  "tags": ["fraud", "streaming", "flink"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "rule",
+        "label": "Rule",
+        "type": "custom",
+        "multi": true,
+        "includeAll": true,
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "options": [
+          { "selected": false, "text": "VELOCITY", "value": "VELOCITY" },
+          { "selected": false, "text": "AMOUNT", "value": "AMOUNT" },
+          { "selected": false, "text": "IMPOSSIBLE_TRAVEL", "value": "IMPOSSIBLE_TRAVEL" }
+        ],
+        "query": "VELOCITY,AMOUNT,IMPOSSIBLE_TRAVEL"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total alerts",
+      "description": "All alerts in the selected time range.",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "text" } },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value",
+        "colorMode": "none",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT COUNT(*) AS \"Total\"\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "High severity",
+      "description": "Alerts the rules graded HIGH: far over the amount threshold, a very dense burst, or a very short travel gap.",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT COUNT(*) AS \"High\"\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)\n  AND severity = 'HIGH'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Cards affected",
+      "description": "Distinct cards with at least one alert.",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value",
+        "colorMode": "none",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT COUNT(DISTINCT card_id) AS \"Cards\"\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "piechart",
+      "title": "Alerts by rule",
+      "description": "Share of alerts raised by each rule. Reads v_alerts_by_rule when the full range is selected.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT rule AS \"Rule\", COUNT(*) AS \"Alerts\"\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)\nGROUP BY rule\nORDER BY 2 DESC"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Alerts per minute by rule",
+      "description": "Bucketed on event time (detected_at), not ingestion time, so a replay reproduces the same shape.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": { "mode": "normal", "group": "A" },
+            "lineWidth": 1,
+            "barAlignment": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT\n  $__timeGroupAlias(detected_at, '1m'),\n  rule AS metric,\n  COUNT(*) AS value\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)\nGROUP BY 1, rule\nORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Top flagged cards",
+      "description": "From v_top_cards_by_alerts. A card tripping several different rules is a stronger signal than one tripping the same rule repeatedly.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": false } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Alerts" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+              { "id": "min", "value": 0 }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "Alerts", "desc": true }] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT\n  card_id            AS \"Card\",\n  COUNT(*)           AS \"Alerts\",\n  COUNT(DISTINCT rule) AS \"Rules\",\n  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT rule ORDER BY rule), ', ') AS \"Which rules\",\n  SUM((severity = 'HIGH')::INT) AS \"High\",\n  MAX(detected_at)   AS \"Last seen\"\nFROM fraud_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)\nGROUP BY card_id\nORDER BY 2 DESC, 6 DESC\nLIMIT 20"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Live alert feed",
+      "description": "From v_recent_alerts, which pre-renders a human-readable summary per rule so this panel needs no rule-specific logic.",
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 17 },
+      "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Severity" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "HIGH": { "text": "HIGH", "color": "orange", "index": 0 },
+                      "MEDIUM": { "text": "MEDIUM", "color": "yellow", "index": 1 }
+                    }
+                  }
+                ]
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "Detected at", "desc": true }] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "datasource": { "type": "postgres", "uid": "pfs-postgres" },
+          "rawSql": "SELECT\n  detected_at AS \"Detected at\",\n  rule        AS \"Rule\",\n  severity    AS \"Severity\",\n  card_id     AS \"Card\",\n  summary     AS \"What happened\",\n  txn_id      AS \"Transaction\"\nFROM v_recent_alerts\nWHERE $__timeFilter(detected_at)\n  AND rule IN ($rule)\nORDER BY detected_at DESC\nLIMIT 200"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+# Loads every dashboard JSON from the mounted directory on startup.
+apiVersion: 1
+
+providers:
+  - name: payments-fraud-streaming
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    # Allows edits in the UI for exploration; the file on disk stays canonical.
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

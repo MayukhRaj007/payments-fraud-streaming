@@ -1,0 +1,20 @@
+# Provisioned datasource: no clicking through the UI to connect Grafana.
+apiVersion: 1
+
+datasources:
+  - name: Postgres
+    # Fixed uid so the dashboard JSON can reference it by name across rebuilds.
+    uid: pfs-postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1700
+      timescaledb: false
+    isDefault: true
+    editable: false
