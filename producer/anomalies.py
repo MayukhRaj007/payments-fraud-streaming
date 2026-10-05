@@ -112,10 +112,13 @@ def impossible_travel(
     10 minute rule window, and short enough that a demo run sees the alert).
     Only leg 2 is labelled: it is the event that reveals the impossibility.
     """
-    home = make_transaction(rng, card)
+    # BOTH legs must be card-present. The detector only treats POS/ATM as proof
+    # of physical presence -- an online purchase from another country is routine
+    # and establishes nothing. If leg 1 were left to pick a channel at random,
+    # roughly a third of injected anomalies would set no location to compare
+    # against and would be undetectable by construction.
+    home = make_transaction(rng, card, channel="POS")
     city, country = rng.choice(FOREIGN_LOCATIONS)
-    # Card-present abroad is what makes this implausible; an online purchase from
-    # another country is perfectly normal and would be a bad label.
     away = make_transaction(rng, card, city=city, country=country, channel="POS")
     return [
         ScheduledTxn(delay_sec=0.0, txn=home),

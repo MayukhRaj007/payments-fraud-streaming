@@ -118,11 +118,13 @@ def test_impossible_travel_labels_only_the_revealing_leg(rng, card):
     assert out[1].label["txn_id"] == out[1].txn["txn_id"]
 
 
-def test_impossible_travel_is_card_present_abroad(rng, card):
-    """An online purchase from another country is normal, so it would be a bad
-    label. The foreign leg must be POS to be genuinely suspicious."""
+def test_impossible_travel_is_card_present_on_both_legs(rng, card):
+    """The detector only accepts POS/ATM as proof of physical presence. If leg 1
+    picked a channel at random, ~a third of injected anomalies would establish no
+    location to compare against and be undetectable by construction."""
     for _ in range(50):
         out = impossible_travel(rng, card, gap_sec=90.0)
+        assert out[0].txn["channel"] == "POS"
         assert out[1].txn["channel"] == "POS"
 
 
