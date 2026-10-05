@@ -1,0 +1,6 @@
+# Test/lint runner. Exists so `make test` and `make lint` need only Docker --
+# no local Python install. CI uses real Python; this mirrors it locally.
+FROM python:3.11-slim
+WORKDIR /w
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt

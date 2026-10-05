@@ -1,0 +1,87 @@
+# payments-fraud-streaming -- full local stack, no cloud accounts.
+#   docker compose up -d
+# Every env var has an inline default, so a .env file is optional.
+#
+# Host ports: Kafka 29092 | Kafka UI 8082 | Flink UI 8081 | Postgres 5432 | Grafana 3000
+# (Kafka UI is on 8082 rather than the usual 8080 to avoid colliding with other
+#  local projects; change the left-hand side of the mapping if you prefer.)
+
+name: payments-fraud-streaming
+
+services:
+  # ---------------------------------------------------------------- Kafka ----
+  # KRaft mode: the broker is its own controller, so there is no Zookeeper.
+  kafka:
+    image: confluentinc/cp-kafka:7.9.10
+    container_name: pfs-kafka
+    ports:
+      - "29092:29092"          # host -> broker (use localhost:29092 from Windows)
+    environment:
+      # A KRaft cluster needs a stable ID; fixed here so restarts reuse the volume.
+      CLUSTER_ID: MkU3OEVCNTcwNTFENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Two client listeners: one for containers (kafka:9092), one for the host
+      # (localhost:29092). Clients are redirected to whichever they connected on.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Single broker, so nothing can be replicated more than once.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+  # One-shot: create the two topics, then exit 0. Topic config lives in git
+  # instead of relying on auto-creation (which would give a single partition).
+  kafka-init:
+    image: confluentinc/cp-kafka:7.9.10
+    container_name: pfs-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      TOPIC_TRANSACTIONS: ${TOPIC_TRANSACTIONS:-transactions}
+      TOPIC_ALERTS: ${TOPIC_ALERTS:-fraud-alerts}
+      TOPIC_PARTITIONS: ${TOPIC_PARTITIONS:-3}
+    # Exec form: the script is one argv element, so YAML preserves its newlines.
+    # $$ stops Compose from interpolating the shell's own variables.
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        for t in "$$TOPIC_TRANSACTIONS" "$$TOPIC_ALERTS"; do
+          kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic "$$t" --partitions "$$TOPIC_PARTITIONS" --replication-factor 1
+        done
+        echo "--- topics ---"
+        kafka-topics --bootstrap-server kafka:9092 --describe
+    restart: "no"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: pfs-kafka-ui
+    ports:
+      - "8082:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+volumes:
+  kafka-data:
